@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getStats } from '../lib/supabase'
 
 export default function StatsBar() {
-  const [stats, setStats] = useState({ total_resumes: 0, total_users: 0, feedback_count: 0 })
+  const [stats, setStats] = useState({ total_resumes: 0, total_users: 0 })
 
   useEffect(() => {
     getStats().then(setStats)
@@ -11,7 +11,6 @@ export default function StatsBar() {
   const items = [
     { label: 'Resumes Analyzed', value: stats.total_resumes, icon: '📄' },
     { label: 'Users', value: stats.total_users, icon: '👥' },
-    { label: 'Feedback Received', value: stats.feedback_count, icon: '⭐' },
   ]
 
   return (

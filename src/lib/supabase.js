@@ -12,11 +12,14 @@ export async function getStats() {
     .eq('id', 1)
     .single()
 
-  if (error) return { total_resumes: 0, total_users: 0, feedback_count: 0 }
+  if (error) return { total_resumes: 0, total_users: 0 }
   return data
 }
 
 export async function incrementResumeCount() {
-  const { error } = await supabase.rpc('increment_resumes')
-  if (error) console.error('Stats update error:', error)
+  await supabase.rpc('increment_resumes')
+}
+
+export async function incrementUserCount() {
+  await supabase.rpc('increment_users')
 }

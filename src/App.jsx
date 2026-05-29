@@ -2,7 +2,7 @@ import { useState } from 'react'
 import UploadSection from './components/UploadSection'
 import ResultSection from './components/ResultSection'
 import StatsBar from './components/StatsBar'
-import { incrementResumeCount } from './lib/supabase'
+import { incrementResumeCount, incrementUserCount } from './lib/supabase'
 
 export default function App() {
   const [result, setResult] = useState(null)
@@ -30,6 +30,12 @@ export default function App() {
       setResult(data)
       await incrementResumeCount()
 
+      const isNewUser = !localStorage.getItem('acc_visited')
+      if (isNewUser) {
+        localStorage.setItem('acc_visited', 'true')
+        await incrementUserCount()
+      }
+      
     } catch (err) {
       setError(err.message)
     } finally {
