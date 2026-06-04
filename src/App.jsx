@@ -9,7 +9,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const handleAnalyze = async (resumeText) => {
+  const handleAnalyze = async (resumeText, careerLevel, targetRole) => {
     setIsLoading(true)
     setError(null)
     setResult(null)
@@ -18,7 +18,7 @@ export default function App() {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeText })
+        body: JSON.stringify({ resumeText, careerLevel, targetRole })
       })
 
       const data = await response.json()
@@ -35,7 +35,7 @@ export default function App() {
         localStorage.setItem('acc_visited', 'true')
         await incrementUserCount()
       }
-      
+
     } catch (err) {
       setError(err.message)
     } finally {
@@ -76,7 +76,7 @@ export default function App() {
                 <span className="text-brand">AI-Reviewed</span> Instantly
               </h1>
               <p className="text-muted text-lg max-w-md mx-auto">
-                Upload your resume and get an ATS score, strengths, and actionable tips in seconds.
+                Upload your resume, select your career level and target role — get ATS scoring, strengths, and actionable tips in seconds.
               </p>
             </div>
 
@@ -93,7 +93,8 @@ export default function App() {
         {isLoading && (
           <div className="flex flex-col items-center gap-4 py-24">
             <div className="w-10 h-10 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-            <p className="text-muted">Analyzing your resume with AI...</p>
+            <p className="text-muted text-sm">Analyzing your resume with AI...</p>
+            <p className="text-muted text-xs">This usually takes 10–20 seconds</p>
           </div>
         )}
 

@@ -1,10 +1,20 @@
 import { useState, useRef } from 'react'
 import { parseFile } from '../lib/parseFile'
 
+const CAREER_LEVELS = [
+  { value: 'Internship', label: '🎓 Internship' },
+  { value: 'Fresh Graduate', label: '🎓 Fresh Graduate' },
+  { value: 'Mid-level (2-5 years)', label: '💼 Mid-level (2–5 years)' },
+  { value: 'Senior / Specialist (5+ years)', label: '🏆 Senior / Specialist (5+ years)' },
+]
+
 export default function UploadSection({ onAnalyze, isLoading }) {
   const [dragOver, setDragOver] = useState(false)
   const [fileName, setFileName] = useState(null)
   const [error, setError] = useState(null)
+  const [careerLevel, setCareerLevel] = useState('')
+  const [targetRole, setTargetRole] = useState('')
+  const [parsedText, setParsedText] = useState(null)
   const inputRef = useRef()
 
   const handleFile = async (file) => {
@@ -26,11 +36,28 @@ export default function UploadSection({ onAnalyze, isLoading }) {
 
     try {
       const text = await parseFile(file)
-      onAnalyze(text)
+      setParsedText(text)
     } catch (err) {
       setError(err.message)
       setFileName(null)
     }
+  }
+
+  const handleSubmit = () => {
+    if (!parsedText) {
+      setError('Please upload your resume first.')
+      return
+    }
+    if (!careerLevel) {
+      setError('Please select your career level.')
+      return
+    }
+    if (!targetRole.trim()) {
+      setError('Please enter your target role.')
+      return
+    }
+    setError(null)
+    onAnalyze(parsedText, careerLevel, targetRole.trim())
   }
 
   const onDrop = (e) => {
@@ -44,8 +71,12 @@ export default function UploadSection({ onAnalyze, isLoading }) {
     handleFile(e.target.files[0])
   }
 
+  const isReady = parsedText && careerLevel && targetRole.trim()
+
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full max-w-xl mx-auto space-y-4">
+
+      {/* Upload Box */}
       <div
         className={`relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200
           ${dragOver ? 'border-brand bg-brand/10' : 'border-border bg-card hover:border-brand/60 hover:bg-card/80'}`}
@@ -73,7 +104,7 @@ export default function UploadSection({ onAnalyze, isLoading }) {
           {fileName ? (
             <div>
               <p className="text-white font-medium">{fileName}</p>
-              <p className="text-muted text-sm mt-1">File ready — analyzing...</p>
+              <p className="text-muted text-sm mt-1">✓ File ready</p>
             </div>
           ) : (
             <div>
@@ -94,16 +125,60 @@ export default function UploadSection({ onAnalyze, isLoading }) {
         </div>
       </div>
 
+      {/* Career Level */}
+      <div className="grid grid-cols-2 gap-2">
+        {CAREER_LEVELS.map((level) => (
+          <button
+            key={level.value}
+            type="button"
+            onClick={() => setCareerLevel(level.value)}
+            className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all text-left
+              ${careerLevel === level.value
+                ? 'border-indigo-500 bg-indigo-500/10 text-white'
+                : 'border-border bg-card text-slate-400 hover:border-indigo-500/40 hover:text-slate-300'
+              }`}
+          >
+            {level.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Target Role */}
+      <input
+        type="text"
+        placeholder="Target Role (e.g. Data Analyst, Software Engineer)"
+        value={targetRole}
+        onChange={(e) => setTargetRole(e.target.value)}
+        className="w-full bg-card border border-border rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+      />
+
+      {/* Error */}
       {error && (
-        <p className="mt-3 text-sm text-red-400 text-center">{error}</p>
+        <p className="text-sm text-red-400 text-center">{error}</p>
       )}
 
+      {/* Submit Button */}
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={!isReady || isLoading}
+        className={`w-full py-3 rounded-xl text-sm font-medium transition-all
+          ${isReady && !isLoading
+            ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+            : 'bg-card border border-border text-slate-500 cursor-not-allowed'
+          }`}
+      >
+        {isLoading ? 'Analyzing...' : 'Analyze My Resume →'}
+      </button>
+
+      {/* Loading */}
       {isLoading && (
-        <div className="mt-6 flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 pt-2">
           <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
           <p className="text-muted text-sm">Analyzing your resume with AI...</p>
         </div>
       )}
+
     </div>
   )
 }
