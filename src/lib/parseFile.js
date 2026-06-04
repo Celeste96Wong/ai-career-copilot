@@ -31,7 +31,7 @@ async function parsePDF(file) {
     throw new Error('Could not extract text from this PDF. It may be image-based. Please try a text-based PDF.')
   }
 
-  return text.trim()
+  return cleanText(text)
 }
 
 async function parseDOCX(file) {
@@ -43,5 +43,15 @@ async function parseDOCX(file) {
     throw new Error('Could not extract text from this DOCX file.')
   }
 
-  return result.value.trim()
+  return cleanText(result.value)
+}
+
+function cleanText(text) {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[^\x20-\x7E\n]/g, '')
+    .trim()
 }

@@ -76,6 +76,11 @@ export default function ResultSection({ result, onReset }) {
         <p className="text-muted text-sm text-center max-w-xs mt-1">
           Based on ATS keyword matching, structure, experience quality, and presentation.
         </p>
+        {result.benchmark && (
+          <p className="text-slate-400 text-sm text-center max-w-sm mt-2 bg-white/5 border border-white/10 rounded-lg px-4 py-2">
+            📊 {result.benchmark}
+          </p>
+        )}
       </div>
 
       {/* Results Grid */}

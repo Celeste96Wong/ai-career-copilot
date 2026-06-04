@@ -1,3 +1,33 @@
+const recruiterContext = `
+RECRUITER KNOWLEDGE BASE:
+
+Malaysia Market:
+- Fresh graduates need clear technical skills and GPA if above 3.5
+- Personal projects and GitHub links significantly increase credibility
+- Quantified achievements are highly valued (numbers, percentages, impact)
+- Bilingual ability (English + Bahasa Malaysia) is a plus for local roles
+- Common hiring companies: Grab, AirAsia, Maybank, TM, Petronas, PwC, EY
+
+Singapore Market:
+- Concise one-page resume preferred for fresh graduates
+- Impact-driven bullet points matter more than job descriptions
+- Avoid overly academic language — focus on real-world contribution
+- Internship experience at recognized companies carries strong weight
+- Common hiring companies: DBS, Shopee, Sea Group, ST Engineering, Deloitte
+
+Common Resume Weaknesses:
+- No metrics or numbers to back up achievements
+- Generic action verbs (did, helped, assisted) instead of strong ones (built, led, reduced, improved)
+- Skills listed without evidence of actual usage
+- Summary section too vague or missing entirely
+- Inconsistent formatting or tense usage
+
+ATS Benchmark:
+- Fresh graduate average: 55-65/100
+- Competitive candidate: 70-80/100
+- Strong candidate: 85+/100
+`
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -10,26 +40,32 @@ export default async function handler(req, res) {
   }
 
   const prompt = `
-You are an expert ATS resume reviewer and career coach.
+You are an AI Career Intelligence Analyst and senior recruiter with 10+ years of hiring experience in Malaysia and Singapore.
 
-Analyze the following resume and return a JSON response with this exact structure:
+${recruiterContext}
+
+Evaluate this resume across these dimensions:
+- ATS compatibility and keyword density (40%)
+- Experience quality and quantified achievements (25%)
+- Skills relevance and evidence of usage (20%)
+- Professional communication and presentation (15%)
+
+STRICT RULES:
+- Every piece of feedback must reference specific evidence from the resume.
+- Do not give generic advice. If you say "add metrics", show exactly where.
+- Tailor all feedback specifically for the Malaysia/Singapore job market.
+- Compare against the benchmark scores provided above.
+- Never fabricate information not present in the resume.
+
+Return ONLY this JSON structure, no markdown, no explanation:
 {
   "score": <number 0-100>,
   "scoreLabel": "<Poor | Fair | Good | Excellent>",
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "improvements": ["<issue 1>", "<issue 2>", "<issue 3>"],
-  "tips": ["<actionable tip 1>", "<actionable tip 2>", "<actionable tip 3>"]
+  "benchmark": "<how this resume compares to typical candidates>",
+  "strengths": ["<specific strength with resume evidence>", "<specific strength>", "<specific strength>"],
+  "improvements": ["<specific issue with exact location in resume>", "<specific issue>", "<specific issue>"],
+  "tips": ["<actionable tip with before/after example>", "<actionable tip>", "<actionable tip>"]
 }
-
-Scoring criteria:
-- Skills relevance and keyword density (25%)
-- Structure and formatting clarity (25%)
-- Experience quality and quantified achievements (25%)
-- Summary and professional presentation (25%)
-
-Be specific, honest, and actionable. Tailor feedback for the Southeast Asian job market (Malaysia/Singapore).
-
-Return ONLY the JSON object. No markdown, no explanation.
 
 RESUME:
 ${resumeText.slice(0, 6000)}
@@ -46,7 +82,7 @@ ${resumeText.slice(0, 6000)}
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_tokens: 800
+        max_tokens: 1000
       })
     })
 
@@ -61,7 +97,8 @@ ${resumeText.slice(0, 6000)}
 
     let parsed
     try {
-      parsed = JSON.parse(raw)
+      const cleaned = raw.replace(/```json|```/g, '').trim()
+      parsed = JSON.parse(cleaned)
     } catch {
       return res.status(500).json({ error: 'Failed to parse AI response', raw })
     }
