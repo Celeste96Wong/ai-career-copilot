@@ -59,6 +59,13 @@ Senior:
 - Thought leadership or industry recognition
 - Team size and organizational scope clearly stated
 - Strategic initiatives with measurable business outcomes
+
+Career Transition Signals:
+- Resume mentions transitioning, pivoting, or moving into a new field
+- Current experience is in a different domain than target role
+- Education is in a different field than work experience
+- Skills mix spans two distinct industries or functions
+- Summary explicitly states career change intention
 `
 
 export default async function handler(req, res) {
@@ -85,10 +92,24 @@ Career Level: ${level}
 Target Role: ${role}
 
 STEP 1 — READ AND EXTRACT
-Before doing any analysis, carefully read the entire resume and extract all key information. This extracted data must be the foundation for every analysis that follows. Do not fabricate or assume anything not present in the resume.
+Carefully read the entire resume. Extract all key information. This is the foundation for everything that follows.
 
-STEP 2 — ANALYZE
-Based ONLY on the extracted features from Step 1, perform a thorough analysis.
+STEP 2 — DETECT CAREER TRANSITION
+Determine if this candidate is undergoing a career transition based on the Career Transition Signals above.
+A transition exists when current/past experience is meaningfully different from the target role.
+If transition detected, adjust your analysis to reflect a transitioning candidate, not a pure specialist.
+
+STEP 3 — SCORE SEPARATELY
+ATS Score: Pure technical assessment of format, keywords, structure, ATS-readiness.
+Market Score: Real-world competitiveness for the target role considering experience, transition status, projects, achievements.
+These two scores are separate and may differ significantly.
+
+STEP 4 — ROLE FIT MATRIX
+Based on the extracted profile, identify 4-6 roles this candidate is realistically suited for in SEA market.
+Score each role honestly. Do not inflate scores.
+
+STEP 5 — ANALYZE
+Base every insight strictly on extracted features. Never fabricate.
 
 Return ONLY this exact JSON structure, no markdown, no explanation:
 
@@ -97,37 +118,50 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
   "targetRole": "${role}",
 
   "resumeProfile": {
-    "summary": "<2-3 sentences describing who this person is, their background, and their overall career positioning based strictly on the resume content>",
+    "summary": "<2-3 sentences: who is this person, their background, and honest career positioning>",
+    "careerTransition": {
+      "detected": <true | false>,
+      "from": "<current/past domain if transition detected, else null>",
+      "to": "<target domain if transition detected, else null>",
+      "note": "<one sentence: honest assessment of transition readiness based on resume evidence>"
+    },
     "extractedFeatures": {
       "education": "<degree, institution, GPA if mentioned>",
-      "experience": "<list of roles and companies, with duration if available>",
-      "technicalSkills": ["<skill 1>", "<skill 2>", "<skill 3>"],
-      "softSkills": ["<soft skill 1>", "<soft skill 2>"],
-      "languages": ["<language 1>", "<language 2>"],
+      "experience": "<list of roles and companies with duration>",
+      "technicalSkills": ["<skill>"],
+      "softSkills": ["<soft skill>"],
+      "languages": ["<language>"],
       "projects": ["<project name and one-line description>"],
       "certifications": ["<certification if any>"],
-      "notableAchievements": ["<any quantified or standout achievement found in resume>"]
+      "notableAchievements": ["<quantified or standout achievement>"]
     }
   },
 
-  "score": <number 0-100>,
-  "scoreLabel": "<Poor | Fair | Good | Excellent>",
+  "atsScore": <number 0-100>,
+  "atsScoreLabel": "<Poor | Fair | Good | Excellent>",
+  "atsNote": "<one sentence: explain what drives this ATS score specifically for this resume>",
+
+  "marketScore": <number 0-100>,
+  "marketScoreLabel": "<Poor | Fair | Good | Excellent>",
+  "marketNote": "<one sentence: explain what drives this market competitiveness score>",
+
   "benchmark": {
     "expectedRange": "<range based on career level>",
     "position": "<one sentence: how this resume compares to typical candidates at this level>",
     "context": "<one sentence: career level + target role + market context>"
   },
-  "verdict": "<one strong sentence summarizing overall competitiveness for this specific role and market>",
+
+  "verdict": "<2 sentences: honest overall assessment of competitiveness, accounting for transition status if applicable>",
 
   "strengths": [
-    "<specific strength with direct evidence quoted from resume>",
-    "<specific strength with direct evidence quoted from resume>",
-    "<specific strength with direct evidence quoted from resume>"
+    "<specific strength with direct evidence from resume>",
+    "<specific strength with direct evidence from resume>",
+    "<specific strength with direct evidence from resume>"
   ],
   "improvements": [
-    "<specific issue with exact location in resume + before/after example>",
-    "<specific issue with exact location in resume + before/after example>",
-    "<specific issue with exact location in resume + before/after example>"
+    "<specific issue with exact location + before/after example>",
+    "<specific issue with exact location + before/after example>",
+    "<specific issue with exact location + before/after example>"
   ],
   "tips": [
     "<actionable tip with before/after example>",
@@ -136,69 +170,85 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
   ],
 
   "premium": {
+    "roleFitMatrix": [
+      { "role": "<role name>", "fitScore": <number 0-100>, "reason": "<one sentence why>", "gap": "<biggest gap for this role>" },
+      { "role": "<role name>", "fitScore": <number 0-100>, "reason": "<one sentence why>", "gap": "<biggest gap for this role>" },
+      { "role": "<role name>", "fitScore": <number 0-100>, "reason": "<one sentence why>", "gap": "<biggest gap for this role>" },
+      { "role": "<role name>", "fitScore": <number 0-100>, "reason": "<one sentence why>", "gap": "<biggest gap for this role>" },
+      { "role": "<role name>", "fitScore": <number 0-100>, "reason": "<one sentence why>", "gap": "<biggest gap for this role>" }
+    ],
     "keywordIntelligence": {
       "detected": [
-        { "keyword": "<keyword found in extractedFeatures>", "status": "<strong | weak>", "reason": "<one sentence: why this keyword matters for the target role, based on candidate's actual usage>" }
+        { "keyword": "<keyword from resume>", "status": "<strong | weak>", "reason": "<why this matters for target role>" }
       ],
       "missing": [
-        { "keyword": "<missing keyword critical for target role>", "reason": "<one sentence: why this keyword is critical for the target role in SEA market>", "howToAdd": "<specific suggestion referencing candidate's actual experience on how to demonstrate this keyword>" }
+        { "keyword": "<missing keyword>", "reason": "<why critical for target role in SEA>", "howToAdd": "<specific suggestion based on candidate background>" }
       ]
     },
     "industryFit": {
       "role": "${role}",
       "fitScore": <number 0-100>,
       "strong": [
-        { "area": "<strong match area based on extractedFeatures>", "evidence": "<direct quote or reference from resume>" }
+        { "area": "<strong match area>", "evidence": "<direct reference from resume>" }
       ],
       "weak": [
-        { "area": "<weak area based on extractedFeatures>", "impact": "<one sentence: how this weakness affects hiring chances for target role>" }
+        { "area": "<weak area>", "impact": "<how this affects hiring chances>" }
       ],
       "actionPlan": [
-        "<specific action referencing candidate's actual background to improve fit score>",
-        "<specific action referencing candidate's actual background to improve fit score>",
-        "<specific action referencing candidate's actual background to improve fit score>"
+        "<specific action referencing candidate actual background>",
+        "<specific action referencing candidate actual background>",
+        "<specific action referencing candidate actual background>"
       ]
     },
     "experienceGap": [
-      { "gap": "<specific gap identified from extractedFeatures>", "benchmark": "<what strong ${level} candidates typically have for ${role} roles>", "suggestion": "<specific actionable suggestion referencing candidate's actual experience>" },
-      { "gap": "<specific gap identified from extractedFeatures>", "benchmark": "<what strong ${level} candidates typically have for ${role} roles>", "suggestion": "<specific actionable suggestion referencing candidate's actual experience>" },
-      { "gap": "<specific gap identified from extractedFeatures>", "benchmark": "<what strong ${level} candidates typically have for ${role} roles>", "suggestion": "<specific actionable suggestion referencing candidate's actual experience>" },
-      { "gap": "<specific gap identified from extractedFeatures>", "benchmark": "<what strong ${level} candidates typically have for ${role} roles>", "suggestion": "<specific actionable suggestion referencing candidate's actual experience>" },
-      { "gap": "<specific gap identified from extractedFeatures>", "benchmark": "<what strong ${level} candidates typically have for ${role} roles>", "suggestion": "<specific actionable suggestion referencing candidate's actual experience>" }
+      { "gap": "<specific gap from extractedFeatures>", "benchmark": "<what strong candidates at this level have>", "suggestion": "<specific suggestion referencing candidate background>" },
+      { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" },
+      { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" },
+      { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" },
+      { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" }
     ],
+    "projectQuality": {
+      "assessment": "<academic | mixed | real-world>",
+      "note": "<one sentence: honest assessment of project quality and commercial relevance>",
+      "suggestions": [
+        "<specific project idea relevant to candidate background and target role>",
+        "<specific project idea relevant to candidate background and target role>",
+        "<specific project idea relevant to candidate background and target role>"
+      ]
+    },
     "rewrite": [
       {
-        "section": "<which section this bullet point is from>",
-        "before": "<exact weak bullet point quoted from resume>",
-        "after": "<rewritten version: specific, quantified, ATS-optimized, based on candidate's actual context>",
-        "why": "<one sentence: explain why this rewrite is stronger>"
+        "section": "<section name>",
+        "before": "<exact quote from resume>",
+        "after": "<rewritten: specific, quantified, ATS-optimized>",
+        "why": "<why this rewrite is stronger>"
       },
       {
-        "section": "<which section this bullet point is from>",
-        "before": "<exact weak bullet point quoted from resume>",
-        "after": "<rewritten version: specific, quantified, ATS-optimized, based on candidate's actual context>",
-        "why": "<one sentence: explain why this rewrite is stronger>"
+        "section": "<section name>",
+        "before": "<exact quote from resume>",
+        "after": "<rewritten version>",
+        "why": "<why stronger>"
       },
       {
-        "section": "<which section this bullet point is from>",
-        "before": "<exact weak bullet point quoted from resume>",
-        "after": "<rewritten version: specific, quantified, ATS-optimized, based on candidate's actual context>",
-        "why": "<one sentence: explain why this rewrite is stronger>"
+        "section": "<section name>",
+        "before": "<exact quote from resume>",
+        "after": "<rewritten version>",
+        "why": "<why stronger>"
       }
     ]
   }
 }
 
 STRICT RULES:
-- resumeProfile.summary must describe this specific person based only on resume content, not generic statements
-- extractedFeatures must only contain information actually present in the resume
-- Every strength, improvement, tip, keyword, gap, and rewrite must trace back to extractedFeatures
-- Never fabricate skills, companies, achievements, or qualifications not in the resume
-- Benchmark range must match the career level selected
-- Verdict must mention the target role and market
-- Rewrite before must be exact quotes from the resume
-- actionPlan must reference the candidate's actual background, not generic advice
-- Write in clear English suitable for the career level selected
+- resumeProfile.summary must describe this specific person, not generic statements
+- careerTransition.detected must be honest, not forced
+- atsScore and marketScore must be calculated independently and may differ
+- roleFitMatrix must reflect honest assessment, do not inflate scores
+- projectQuality.assessment must distinguish academic from real-world honestly
+- Every insight must trace back to extractedFeatures
+- Never fabricate skills, companies, achievements not in resume
+- rewrite before must be exact quotes from resume
+- Write in clear English suitable for the career level
 
 RESUME:
 ${resumeText.slice(0, 6000)}
@@ -215,7 +265,7 @@ ${resumeText.slice(0, 6000)}
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
-        max_tokens: 3500
+        max_tokens: 4000
       })
     })
 

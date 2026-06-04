@@ -14,31 +14,31 @@ const scoreRing = (score) => {
   return 'stroke-red-400'
 }
 
-function ScoreCircle({ score }) {
-  const radius = 54
+function ScoreCircle({ score, label }) {
+  const radius = 46
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (score / 100) * circumference
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width="140" height="140" viewBox="0 0 140 140">
-        <circle cx="70" cy="70" r={radius} fill="none" stroke="#2a2d3a" strokeWidth="10" />
+    <div className="flex flex-col items-center gap-1">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <circle cx="55" cy="55" r={radius} fill="none" stroke="#2a2d3a" strokeWidth="8" />
         <circle
-          cx="70" cy="70" r={radius} fill="none"
+          cx="55" cy="55" r={radius} fill="none"
           className={scoreRing(score)}
-          strokeWidth="10"
+          strokeWidth="8"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          transform="rotate(-90 70 70)"
+          transform="rotate(-90 55 55)"
           style={{ transition: 'stroke-dashoffset 1s ease' }}
         />
-        <text x="70" y="70" textAnchor="middle" dominantBaseline="central"
-          fill="white" fontSize="28" fontWeight="700" fontFamily="Inter">
+        <text x="55" y="55" textAnchor="middle" dominantBaseline="central"
+          fill="white" fontSize="22" fontWeight="700" fontFamily="Inter">
           {score}
         </text>
       </svg>
-      <p className={`text-sm font-semibold ${scoreColor(score)}`}>ATS Score</p>
+      <p className={`text-xs font-semibold ${scoreColor(score)}`}>{label}</p>
     </div>
   )
 }
@@ -68,6 +68,7 @@ function Section({ title, items, color }) {
 function ResumeProfileCard({ profile }) {
   if (!profile) return null
   const f = profile.extractedFeatures
+  const t = profile.careerTransition
 
   return (
     <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
@@ -76,8 +77,16 @@ function ResumeProfileCard({ profile }) {
         <p className="text-slate-300 text-sm leading-relaxed">{profile.summary}</p>
       </div>
 
-      <div className="border-t border-border pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {t?.detected && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+          <p className="text-xs text-amber-400 font-medium mb-1">
+            🔄 Career Transition Detected: {t.from} → {t.to}
+          </p>
+          <p className="text-xs text-slate-400">{t.note}</p>
+        </div>
+      )}
 
+      <div className="border-t border-border pt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
         {f.education && (
           <div>
             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Education</p>
@@ -124,8 +133,7 @@ function ResumeProfileCard({ profile }) {
             <div className="space-y-1">
               {f.projects.map((p, i) => (
                 <p key={i} className="text-xs text-slate-300 flex gap-2">
-                  <span className="text-indigo-400 shrink-0">→</span>
-                  {p}
+                  <span className="text-indigo-400 shrink-0">→</span>{p}
                 </p>
               ))}
             </div>
@@ -138,8 +146,7 @@ function ResumeProfileCard({ profile }) {
             <div className="space-y-1">
               {f.notableAchievements.map((a, i) => (
                 <p key={i} className="text-xs text-slate-300 flex gap-2">
-                  <span className="text-emerald-400 shrink-0">★</span>
-                  {a}
+                  <span className="text-emerald-400 shrink-0">★</span>{a}
                 </p>
               ))}
             </div>
@@ -158,8 +165,68 @@ function ResumeProfileCard({ profile }) {
             </div>
           </div>
         )}
-
       </div>
+    </div>
+  )
+}
+
+function ScoreCard({ result }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+
+      {/* Dual Score */}
+      <div className="flex justify-around items-center">
+        <div className="text-center">
+          <ScoreCircle score={result.atsScore} label="ATS Score" />
+          <p className={`text-xs mt-1 ${scoreColor(result.atsScore)}`}>{result.atsScoreLabel}</p>
+          {result.atsNote && (
+            <p className="text-xs text-slate-500 mt-1 max-w-[140px] text-center leading-relaxed">{result.atsNote}</p>
+          )}
+        </div>
+
+        <div className="h-20 w-px bg-border" />
+
+        <div className="text-center">
+          <ScoreCircle score={result.marketScore} label="Market Score" />
+          <p className={`text-xs mt-1 ${scoreColor(result.marketScore)}`}>{result.marketScoreLabel}</p>
+          {result.marketNote && (
+            <p className="text-xs text-slate-500 mt-1 max-w-[140px] text-center leading-relaxed">{result.marketNote}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Tags */}
+      {(result.careerLevel || result.targetRole) && (
+        <div className="flex gap-2 flex-wrap justify-center">
+          {result.careerLevel && (
+            <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400">
+              {result.careerLevel}
+            </span>
+          )}
+          {result.targetRole && (
+            <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400">
+              {result.targetRole}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Benchmark */}
+      {result.benchmark && (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-1 text-center">
+          <p className="text-xs text-slate-400 uppercase tracking-wider">SEA Market Benchmark</p>
+          <p className="text-white text-sm font-medium">{result.benchmark.position}</p>
+          <p className="text-slate-400 text-xs">Expected range: {result.benchmark.expectedRange}</p>
+          <p className="text-slate-500 text-xs">{result.benchmark.context}</p>
+        </div>
+      )}
+
+      {/* Verdict */}
+      {result.verdict && (
+        <p className="text-slate-300 text-sm text-center leading-relaxed border-t border-border pt-3">
+          {result.verdict}
+        </p>
+      )}
     </div>
   )
 }
@@ -171,6 +238,40 @@ function PremiumSection({ result }) {
   return (
     <div className="rounded-2xl border border-border overflow-hidden">
       <div className="p-5 space-y-5">
+
+        {/* Role Fit Matrix */}
+        {p.roleFitMatrix?.length > 0 && (
+          <div className="rounded-xl border border-border p-4 space-y-3">
+            <h3 className="text-white font-semibold text-sm">🎯 Role Fit Matrix</h3>
+            <p className="text-xs text-slate-500">Based on your profile, here are your realistic role matches in SEA market:</p>
+            <div className="space-y-3">
+              {p.roleFitMatrix
+                .sort((a, b) => b.fitScore - a.fitScore)
+                .map((r, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300 font-medium">{r.role}</span>
+                    <span className={`text-sm font-semibold ${scoreColor(r.fitScore)}`}>{r.fitScore}%</span>
+                  </div>
+                  <div className="w-full bg-white/5 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full transition-all ${
+                        r.fitScore >= 80 ? 'bg-emerald-400' :
+                        r.fitScore >= 60 ? 'bg-yellow-400' :
+                        'bg-red-400'
+                      }`}
+                      style={{ width: `${r.fitScore}%` }}
+                    />
+                  </div>
+                  <div className="flex gap-4">
+                    {r.reason && <p className="text-xs text-slate-500 flex-1">{r.reason}</p>}
+                    {r.gap && <p className="text-xs text-red-400 flex-1">Gap: {r.gap}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Keyword Intelligence */}
         {p.keywordIntelligence && (
@@ -223,8 +324,10 @@ function PremiumSection({ result }) {
         {p.industryFit && (
           <div className="rounded-xl border border-border p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-white font-semibold text-sm">🎯 Industry Fit</h3>
-              <span className="text-2xl font-bold text-indigo-400">{p.industryFit.fitScore}%</span>
+              <h3 className="text-white font-semibold text-sm">📊 Industry Fit — {p.industryFit.role}</h3>
+              <span className={`text-xl font-bold ${scoreColor(p.industryFit.fitScore)}`}>
+                {p.industryFit.fitScore}%
+              </span>
             </div>
 
             <div className="w-full bg-white/5 rounded-full h-1.5">
@@ -261,7 +364,7 @@ function PremiumSection({ result }) {
 
             {p.industryFit.actionPlan?.length > 0 && (
               <div>
-                <p className="text-xs text-slate-400 mb-2">Action Plan to improve fit:</p>
+                <p className="text-xs text-slate-400 mb-2">Action Plan:</p>
                 <div className="space-y-1.5">
                   {p.industryFit.actionPlan.map((action, i) => (
                     <div key={i} className="flex gap-2 text-xs text-slate-300">
@@ -278,21 +381,54 @@ function PremiumSection({ result }) {
         {/* Experience Gap */}
         {p.experienceGap?.length > 0 && (
           <div className="rounded-xl border border-border p-4 space-y-3">
-            <h3 className="text-white font-semibold text-sm">📊 Experience Gap</h3>
+            <h3 className="text-white font-semibold text-sm">📋 Experience Gap</h3>
             <div className="space-y-3">
               {p.experienceGap.map((g, i) => (
                 <div key={i} className="text-xs p-3 rounded-lg border border-white/5 bg-white/2 space-y-1.5">
                   <p className="text-slate-200 font-medium">{g.gap}</p>
                   {g.benchmark && (
                     <p className="text-slate-500">
-                      <span className="text-slate-400">Benchmark: </span>
-                      {g.benchmark}
+                      <span className="text-slate-400">Benchmark: </span>{g.benchmark}
                     </p>
                   )}
                   {g.suggestion && <p className="text-indigo-400">→ {g.suggestion}</p>}
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Project Quality */}
+        {p.projectQuality && (
+          <div className="rounded-xl border border-border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-semibold text-sm">🔬 Project Quality</h3>
+              <span className={`text-xs px-2 py-1 rounded-full border font-medium ${
+                p.projectQuality.assessment === 'real-world'
+                  ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                  : p.projectQuality.assessment === 'mixed'
+                  ? 'border-yellow-500/30 text-yellow-400 bg-yellow-500/10'
+                  : 'border-red-500/30 text-red-400 bg-red-500/10'
+              }`}>
+                {p.projectQuality.assessment}
+              </span>
+            </div>
+            {p.projectQuality.note && (
+              <p className="text-xs text-slate-400">{p.projectQuality.note}</p>
+            )}
+            {p.projectQuality.suggestions?.length > 0 && (
+              <div>
+                <p className="text-xs text-slate-500 mb-2">Suggested projects to strengthen your profile:</p>
+                <div className="space-y-1.5">
+                  {p.projectQuality.suggestions.map((s, i) => (
+                    <div key={i} className="flex gap-2 text-xs text-slate-300">
+                      <span className="text-indigo-400 shrink-0">→</span>
+                      <span>{s}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -332,58 +468,17 @@ export default function ResultSection({ result, onReset }) {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
 
-      {/* Resume Profile */}
       <ResumeProfileCard profile={result.resumeProfile} />
+      <ScoreCard result={result} />
 
-      {/* Score Card */}
-      <div className="bg-card border border-border rounded-2xl p-8 flex flex-col items-center gap-3">
-        <ScoreCircle score={result.score} />
-        <p className={`text-lg font-semibold ${scoreColor(result.score)}`}>
-          {result.scoreLabel}
-        </p>
-
-        {(result.careerLevel || result.targetRole) && (
-          <div className="flex gap-2 flex-wrap justify-center">
-            {result.careerLevel && (
-              <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400">
-                {result.careerLevel}
-              </span>
-            )}
-            {result.targetRole && (
-              <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-400">
-                {result.targetRole}
-              </span>
-            )}
-          </div>
-        )}
-
-        {result.benchmark && (
-          <div className="w-full mt-2 bg-white/5 border border-white/10 rounded-xl p-4 space-y-1 text-center">
-            <p className="text-xs text-slate-400 uppercase tracking-wider">SEA Market Benchmark</p>
-            <p className="text-white text-sm font-medium">{result.benchmark.position}</p>
-            <p className="text-slate-400 text-xs">Expected range for your level: {result.benchmark.expectedRange}</p>
-            <p className="text-slate-500 text-xs">{result.benchmark.context}</p>
-          </div>
-        )}
-
-        {result.verdict && (
-          <p className="text-slate-300 text-sm text-center max-w-md leading-relaxed border-t border-border pt-3 mt-1">
-            {result.verdict}
-          </p>
-        )}
-      </div>
-
-      {/* Free Sections */}
       <div className="grid gap-4">
         <Section title="✅ Strengths" items={result.strengths} color="green" />
         <Section title="⚠️ Improvements Needed" items={result.improvements} color="red" />
         <Section title="💡 Actionable Tips" items={result.tips} color="blue" />
       </div>
 
-      {/* Premium Section */}
       <PremiumSection result={result} />
 
-      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={onReset}
