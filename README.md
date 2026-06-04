@@ -145,6 +145,8 @@ vercel --prod
 
 ### First time only (if repo not linked yet):
 ```bash
+git status # to check github status
+git checkout . # to go back previous version
 git init
 git add .
 git commit -m "first commit"
