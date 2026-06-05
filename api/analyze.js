@@ -1,3 +1,68 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+)
+
+const DAILY_FREE_LIMIT = 2
+
+async function checkAndIncrementUsage(ip) {
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('usage_logs')
+    .select('count')
+    .eq('ip', ip)
+    .eq('date', today)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Supabase check error:', error)
+    return { allowed: true, count: 0 }
+  }
+
+  if (!data) {
+    const { error: insertError } = await supabase
+      .from('usage_logs')
+      .insert([{ ip, date: today, count: 1 }])
+    console.log('DEBUG insert result - error:', insertError)
+    return { allowed: true, count: 1 }
+  }
+
+  if (data.count >= DAILY_FREE_LIMIT) {
+    return { allowed: false, count: data.count }
+  }
+
+  await supabase
+    .from('usage_logs')
+    .update({ count: data.count + 1 })
+    .eq('ip', ip)
+    .eq('date', today)
+
+  return { allowed: true, count: data.count + 1 }
+}
+
+async function validateToken(token) {
+  if (!token) return false
+
+  const { data, error } = await supabase
+    .from('payment_tokens')
+    .select('*')
+    .eq('token', token)
+    .eq('used', false)
+    .single()
+
+  if (error || !data) return false
+
+  await supabase
+    .from('payment_tokens')
+    .update({ used: true })
+    .eq('token', token)
+
+  return true
+}
+
 const marketContext = `
 SEA HIRING CONTEXT — Malaysia & Singapore
 
@@ -73,10 +138,28 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { resumeText, careerLevel, targetRole } = req.body
+  const { resumeText, careerLevel, targetRole, paymentToken } = req.body
 
   if (!resumeText || resumeText.trim().length < 50) {
     return res.status(400).json({ error: 'Resume text is too short or missing.' })
+  }
+
+  const ip =
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.headers['x-real-ip'] ||
+    req.socket?.remoteAddress ||
+    'unknown'
+
+  const tokenValid = await validateToken(paymentToken)
+
+  if (!tokenValid) {
+    const usage = await checkAndIncrementUsage(ip)
+    if (!usage.allowed) {
+      return res.status(429).json({
+        error: 'limit_reached',
+        message: 'You have used your 2 free analyses today. Unlock more for RM3.90.'
+      })
+    }
   }
 
   const level = careerLevel || 'Fresh Graduate'
@@ -116,7 +199,6 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
 {
   "careerLevel": "${level}",
   "targetRole": "${role}",
-
   "resumeProfile": {
     "summary": "<2-3 sentences: who is this person, their background, and honest career positioning>",
     "careerTransition": {
@@ -136,23 +218,18 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
       "notableAchievements": ["<quantified or standout achievement>"]
     }
   },
-
   "atsScore": <number 0-100>,
   "atsScoreLabel": "<Poor | Fair | Good | Excellent>",
   "atsNote": "<one sentence: explain what drives this ATS score specifically for this resume>",
-
   "marketScore": <number 0-100>,
   "marketScoreLabel": "<Poor | Fair | Good | Excellent>",
   "marketNote": "<one sentence: explain what drives this market competitiveness score>",
-
   "benchmark": {
     "expectedRange": "<range based on career level>",
     "position": "<one sentence: how this resume compares to typical candidates at this level>",
     "context": "<one sentence: career level + target role + market context>"
   },
-
   "verdict": "<2 sentences: honest overall assessment of competitiveness, accounting for transition status if applicable>",
-
   "strengths": [
     "<specific strength with direct evidence from resume>",
     "<specific strength with direct evidence from resume>",
@@ -168,7 +245,6 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
     "<actionable tip with before/after example>",
     "<actionable tip with before/after example>"
   ],
-
   "premium": {
     "roleFitMatrix": [
       { "role": "<role name>", "fitScore": <number 0-100>, "reason": "<one sentence why>", "gap": "<biggest gap for this role>" },
@@ -201,7 +277,7 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
       ]
     },
     "experienceGap": [
-      { "gap": "<specific gap from extractedFeatures>", "benchmark": "<what strong candidates at this level have>", "suggestion": "<specific suggestion referencing candidate background>" },
+      { "gap": "<specific gap>", "benchmark": "<what strong candidates at this level have>", "suggestion": "<specific suggestion>" },
       { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" },
       { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" },
       { "gap": "<specific gap>", "benchmark": "<benchmark>", "suggestion": "<suggestion>" },
@@ -217,24 +293,9 @@ Return ONLY this exact JSON structure, no markdown, no explanation:
       ]
     },
     "rewrite": [
-      {
-        "section": "<section name>",
-        "before": "<exact quote from resume>",
-        "after": "<rewritten: specific, quantified, ATS-optimized>",
-        "why": "<why this rewrite is stronger>"
-      },
-      {
-        "section": "<section name>",
-        "before": "<exact quote from resume>",
-        "after": "<rewritten version>",
-        "why": "<why stronger>"
-      },
-      {
-        "section": "<section name>",
-        "before": "<exact quote from resume>",
-        "after": "<rewritten version>",
-        "why": "<why stronger>"
-      }
+      { "section": "<section name>", "before": "<exact quote from resume>", "after": "<rewritten version>", "why": "<why stronger>" },
+      { "section": "<section name>", "before": "<exact quote from resume>", "after": "<rewritten version>", "why": "<why stronger>" },
+      { "section": "<section name>", "before": "<exact quote from resume>", "after": "<rewritten version>", "why": "<why stronger>" }
     ]
   }
 }
