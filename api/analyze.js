@@ -5,44 +5,6 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY
 )
 
-const DAILY_FREE_LIMIT = 2
-
-async function checkAndIncrementUsage(ip) {
-  const today = new Date().toISOString().split('T')[0]
-
-  const { data, error } = await supabase
-    .from('usage_logs')
-    .select('count')
-    .eq('ip', ip)
-    .eq('date', today)
-    .single()
-
-  if (error && error.code !== 'PGRST116') {
-    console.error('Supabase check error:', error)
-    return { allowed: true, count: 0 }
-  }
-
-  if (!data) {
-    const { error: insertError } = await supabase
-      .from('usage_logs')
-      .insert([{ ip, date: today, count: 1 }])
-    console.log('DEBUG insert result - error:', insertError)
-    return { allowed: true, count: 1 }
-  }
-
-  if (data.count >= DAILY_FREE_LIMIT) {
-    return { allowed: false, count: data.count }
-  }
-
-  await supabase
-    .from('usage_logs')
-    .update({ count: data.count + 1 })
-    .eq('ip', ip)
-    .eq('date', today)
-
-  return { allowed: true, count: data.count + 1 }
-}
-
 async function validateToken(token) {
   if (!token) return false
 
@@ -144,23 +106,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Resume text is too short or missing.' })
   }
 
-  const ip =
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-    req.headers['x-real-ip'] ||
-    req.socket?.remoteAddress ||
-    'unknown'
-
-  const tokenValid = await validateToken(paymentToken)
-
-  if (!tokenValid) {
-    const usage = await checkAndIncrementUsage(ip)
-    if (!usage.allowed) {
-      return res.status(429).json({
-        error: 'limit_reached',
-        message: 'You have used your 2 free analyses today. Unlock more for RM3.90.'
-      })
-    }
-  }
+  await validateToken(paymentToken)
 
   const level = careerLevel || 'Fresh Graduate'
   const role = targetRole || 'General'

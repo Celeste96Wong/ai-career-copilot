@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
 import UploadSection from './components/UploadSection'
 import ResultSection from './components/ResultSection'
-import StatsBar from './components/StatsBar'
-import { incrementResumeCount, incrementUserCount } from './lib/supabase'
 
 export default function App() {
   const [result, setResult] = useState(null)
@@ -88,13 +86,6 @@ export default function App() {
       if (paymentToken) setPaymentToken(null)
 
       setResult(data)
-      await incrementResumeCount()
-
-      const isNewUser = !localStorage.getItem('acc_visited')
-      if (isNewUser) {
-        localStorage.setItem('acc_visited', 'true')
-        await incrementUserCount()
-      }
 
     } catch (err) {
       setError(err.message)
@@ -145,8 +136,6 @@ export default function App() {
                 Upload your resume, select your career level and target role — get ATS scoring, strengths, and actionable tips in seconds.
               </p>
             </div>
-
-            <StatsBar />
 
             {paymentToken && (
               <div className="mb-6 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
